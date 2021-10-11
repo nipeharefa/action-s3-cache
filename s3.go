@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go"
 	"github.com/pkg/errors"
 )
 
@@ -121,8 +123,17 @@ func ObjectExists(key, bucket string) (bool, error) {
 	}
 
 	if _, err = session.HeadObject(context.TODO(), i); err != nil {
-		var nsk *types.NoSuchKey
+		var nsk *types.NotFound
+		var ae smithy.APIError
+
+		if errors.As(err, &ae) {
+			if ae.ErrorCode() == "NotFound" {
+				return false, nil
+			}
+		}
+
 		if errors.As(err, &nsk) {
+			fmt.Println("ok")
 			return false, nil
 		}
 	}
